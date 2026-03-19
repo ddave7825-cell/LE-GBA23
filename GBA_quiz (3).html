@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GBA – Grand Quiz CI & Monde</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════ */
+:root{
+  --orange:#F47920;--vert:#009A44;--or:#C9A84C;
+  --fond:#070707;--card:#121212;--card2:#1A1A1A;
+  --texte:#E8E4DC;--gris:#555;--gris2:#888;
+  --page-w:520px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;background:var(--fond);color:var(--texte)}
+
+/* ═══════════════════════════════════════
+   APP SHELL — plein écran, une page à la fois
+═══════════════════════════════════════ */
+#app{
+  position:fixed;inset:0;overflow:hidden;
+  background:var(--fond);
+}
+/* Fond décoratif */
+#app::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(60deg,transparent,transparent 50px,rgba(244,121,32,.02) 50px,rgba(244,121,32,.02) 51px),
+    repeating-linear-gradient(-60deg,transparent,transparent 50px,rgba(0,154,68,.02) 50px,rgba(0,154,68,.02) 51px);
+}
+
+/* ═══════════════════════════════════════
+   PAGES — glissent dans/hors de l'écran
+═══════════════════════════════════════ */
+.page{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;
+  overflow-y:auto;overflow-x:hidden;
+  transform:translateX(100%);
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  will-change:transform;
+}
+.page.active{ transform:translateX(0); }
+.page.exit-left{ transform:translateX(-100%); }
+
+/* Scrollbar fine */
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-track{background:transparent}
+.page::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+
+/* Centre le contenu */
+.page-inner{
+  width:100%;max-width:var(--page-w);
+  padding:24px 20px 100px;
+  flex:1;
+}
+
+/* ═══════════════════════════════════════
+   PUBLICITÉ STICKY BAS
+═══════════════════════════════════════ */
+.ad-stick{
+  position:fixed;bottom:0;left:0;right:0;z-index:999;
+  background:rgba(7,7,7,.95);backdrop-filter:blur(8px);
+  border-top:1px solid rgba(255,255,255,.07);
+  padding:8px 16px 10px;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+}
+.ad-stick-content{max-width:var(--page-w);width:100%;position:relative;height:50px;display:flex;align-items:center;justify-content:center}
+.ad-label-small{position:absolute;top:-6px;left:0;font-size:8px;color:var(--gris);letter-spacing:1px;text-transform:uppercase}
+.ad-close-btn{position:absolute;top:-10px;right:0;width:20px;height:20px;border-radius:50%;background:var(--card2);border:1px solid rgba(255,255,255,.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gris2)}
+
+/* ═══════════════════════════════════════
+   PUBLICITÉ INLINE
+═══════════════════════════════════════ */
+.ad-box{
+  width:100%;border-radius:12px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.05);
+  background:linear-gradient(135deg,rgba(244,121,32,.04),rgba(0,154,68,.04));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:16px;margin:16px 0;position:relative;
+  min-height:90px;
+}
+.ad-box .adlbl{position:absolute;top:6px;right:8px;font-size:8px;color:var(--gris);letter-spacing:1px;text-transform:uppercase}
+.ad-box .adico{font-size:20px}
+.ad-box .adtxt{font-size:11px;color:var(--gris2);text-align:center}
+.ad-box .adcta{font-size:11px;font-weight:600;color:var(--orange);border:1px solid rgba(244,121,32,.35);border-radius:20px;padding:4px 14px;cursor:pointer;text-decoration:none;margin-top:2px}
+
+/* ═══════════════════════════════════════
+   COMPOSANTS COMMUNS
+═══════════════════════════════════════ */
+/* Boutons */
+.btn-main{
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:4px;
+  background:linear-gradient(135deg,var(--orange),#d05000);color:#fff;
+  border:none;width:100%;padding:18px;border-radius:12px;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 8px 30px rgba(244,121,32,.35);
+  margin-top:8px;
+}
+.btn-main:active{transform:scale(.98)}
+.btn-main.vert{background:linear-gradient(135deg,var(--vert),#006622)}
+.btn-main.outline{background:transparent;border:1.5px solid rgba(255,255,255,.15);color:var(--texte);box-shadow:none}
+.btn-main.outline:hover{border-color:var(--orange);color:var(--orange)}
+.btn-main.sm{font-size:17px;padding:14px;letter-spacing:3px}
+
+/* Pill stat */
+.pill{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:6px 14px;font-size:12px}
+.pill .v{font-weight:600;color:var(--or)}
+
+/* Progress bar */
+.progress-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-bottom:20px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--vert));border-radius:2px;transition:width .6s ease}
+
+/* Badges */
+.cat-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(244,121,32,.1);border:1px solid rgba(244,121,32,.25);color:var(--orange);border-radius:20px;padding:4px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.mode-badge-photo{display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);color:var(--or);border-radius:20px;padding:4px 12px;font-size:11px;letter-spacing:1px;text-transform:uppercase}
+
+/* Timer */
+.timer-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.tarc{width:44px;height:44px;flex-shrink:0}
+.tarc circle{fill:none;stroke-width:3.5}
+.tarc .bg{stroke:rgba(255,255,255,.06)}
+.tarc .fg{stroke:var(--orange);stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
+.tlbl{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--orange);line-height:1}
+
+/* Explication */
+.exp-box{background:var(--card2);border-left:3px solid var(--or);border-radius:0 10px 10px 0;padding:14px 16px;font-size:13px;color:#C0B8A8;line-height:1.65;margin:14px 0;display:none;animation:fadeUp .35s ease}
+.exp-box.show{display:block}
+.exp-box strong{color:var(--or)}
+.exp-link{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:7px 14px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:20px;color:var(--or);font-size:12px;font-weight:500;text-decoration:none;cursor:pointer;transition:all .2s}
+.exp-link:hover{background:rgba(201,168,76,.2);border-color:var(--or);transform:translateX(3px)}
+
+/* Auto-next bar */
+.an-wrap{margin:8px 0 14px}
+.an-lbl{font-size:10px;color:var(--gris);text-align:right;margin-bottom:4px;display:none}
+.an-lbl.show{display:block}
+.an-bar{height:2px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;display:none}
+.an-bar.show{display:block}
+.an-fill{height:100%;width:100%;background:linear-gradient(90deg,var(--or),var(--orange));border-radius:2px}
+
+/* Image question */
+.q-img{width:100%;height:180px;border-radius:12px;overflow:hidden;position:relative;background:var(--card2);margin-bottom:16px;display:none}
+.q-img.show{display:block}
+.q-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s}
+.q-img img.ok{opacity:1}
+.q-img .shimmer{position:absolute;inset:0;background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,.04) 50%,var(--card2) 75%);background-size:200% 100%;animation:shim 1.3s infinite}
+.q-img .shimmer.off{display:none}
+.q-img .emoj{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;opacity:.15}
+.q-img .credit{position:absolute;bottom:0;right:0;background:rgba(0,0,0,.5);color:rgba(255,255,255,.3);font-size:8px;padding:2px 7px;border-radius:4px 0 0 0}
+
+/* ═══════════════════════════════════════
+   OPTIONS TEXTE
+═══════════════════════════════════════ */
+.opts-text{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:400px){.opts-text{grid-template-columns:1fr}}
+.opt-btn{
+  background:var(--card);border:1.5px solid rgba(255,255,255,.07);border-radius:11px;
+  padding:14px 15px;text-align:left;color:var(--texte);
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  cursor:pointer;transition:all .18s;
+  display:flex;align-items:center;gap:10px;
+}
+.opt-letter{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:var(--gris);transition:all .18s}
+.opt-btn:hover:not(:disabled){border-color:rgba(244,121,32,.4);background:rgba(244,121,32,.05)}
+.opt-btn:hover:not(:disabled) .opt-letter{background:rgba(244,121,32,.2);color:var(--orange)}
+.opt-btn.correct{border-color:var(--vert)!important;background:rgba(0,154,68,.1)!important;animation:pop .35s}
+.opt-btn.correct .opt-letter{background:var(--vert)!important;color:#fff!important}
+.opt-btn.wrong{border-color:#E53935!important;background:rgba(229,57,53,.08)!important}
+.opt-btn.wrong .opt-letter{background:#E53935!important;color:#fff!important}
+
+/* ═══════════════════════════════════════
+   OPTIONS PHOTO
+═══════════════════════════════════════ */
+.opts-photo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.photo-opt{
+  position:relative;border-radius:12px;overflow:hidden;cursor:pointer;
+  border:2px solid rgba(255,255,255,.07);
+  aspect-ratio:1/1;background:var(--card2);
+  transition:all .2s;
+}
+.photo-opt:hover:not(.disabled){border-color:var(--orange);transform:scale(1.03);box-shadow:0 6px 20px rgba(244,121,32,.3)}
+.photo-opt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+.photo-opt img.ok{opacity:1}
+.photo-opt .pshim{position:absolute;inset:0;background:linear-gradient(90deg,var(--card2) 25%,rgba(255,255,255,.05) 50%,var(--card2) 75%);background-size:200% 100%;animation:shim 1.3s infinite}
+.photo-opt .pshim.off{display:none}
+.photo-opt .pemoj{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px;opacity:.25;pointer-events:none}
+.photo-opt .plbl{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,.85),transparent);color:#fff;font-size:11px;font-weight:500;padding:16px 8px 7px;text-align:center}
+.photo-opt .pbadge{position:absolute;top:7px;left:7px;width:24px;height:24px;border-radius:7px;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.8)}
+.photo-opt.correct{border-color:var(--vert)!important;animation:pop .35s}
+.photo-opt.correct::after{content:'';position:absolute;inset:0;background:rgba(0,154,68,.18);pointer-events:none}
+.photo-opt.correct .plbl{background:linear-gradient(to top,rgba(0,120,50,.9),transparent)}
+.photo-opt.wrong{border-color:#E53935!important}
+.photo-opt.wrong::after{content:'';position:absolute;inset:0;background:rgba(229,57,53,.12);pointer-events:none}
+.photo-opt.disabled{cursor:default;pointer-events:none}
+
+/* ═══════════════════════════════════════
+   RÉSULTATS — mini dots
+═══════════════════════════════════════ */
+.recap{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:16px 0 24px}
+.rdot{width:22px;height:22px;border-radius:50%}
+.rdot.ok{background:var(--vert)}
+.rdot.ko{background:#E53935}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════ */
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 40px rgba(244,121,32,.3)}50%{box-shadow:0 0 70px rgba(244,121,32,.6)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══════════════════════════════════════
+   PAGE 1 — SPLASH / ACCUEIL
+═══════════════════════════════════════ */
+#pg-home{background:var(--fond);justify-content:center}
+.logo-ring{width:110px;height:110px;border-radius:50%;background:conic-gradient(var(--orange) 33%,#fff 33% 66%,var(--vert) 66%);display:flex;align-items:center;justify-content:center;animation:pulse 3s infinite;margin-bottom:20px}
+.logo-center{width:82px;height:82px;border-radius:50%;background:var(--fond);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--or);letter-spacing:2px}
+.home-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,12vw,80px);letter-spacing:8px;line-height:1;background:linear-gradient(135deg,var(--orange),var(--or),var(--vert));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.home-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--or);margin-bottom:4px;letter-spacing:2px}
+.home-tag{font-size:10px;color:var(--gris);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
+.home-stats{display:flex;gap:10px;justify-content:center;margin-bottom:32px;flex-wrap:wrap}
+.hstat{background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;text-align:center;flex:1;min-width:80px}
+.hstat .hn{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--or)}
+.hstat .hl{font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px}
+
+/* ═══════════════════════════════════════
+   PAGE 2 — CHOIX DU MODE
+═══════════════════════════════════════ */
+.mode-card{
+  background:var(--card);border:2px solid rgba(255,255,255,.07);border-radius:16px;
+  padding:22px 20px;cursor:pointer;transition:all .22s;margin-bottom:14px;
+  display:flex;align-items:center;gap:16px;
+}
+.mode-card:hover,.mode-card:active{border-color:var(--orange);background:rgba(244,121,32,.07);transform:translateX(4px)}
+.mode-card .mc-ico{font-size:38px;flex-shrink:0}
+.mode-card .mc-body{}
+.mode-card .mc-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:4px}
+.mode-card .mc-desc{font-size:12px;color:var(--gris2);line-height:1.5}
+.mode-card .mc-new{display:inline-block;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);color:var(--or);border-radius:20px;padding:2px 9px;font-size:10px;margin-top:5px}
+.mode-card .mc-arr{margin-left:auto;font-size:22px;color:var(--gris);flex-shrink:0}
+
+/* ═══════════════════════════════════════
+   PAGE 3 — QUESTION (TEXTE + PHOTO)
+═══════════════════════════════════════ */
+.q-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px}
+.q-stats{display:flex;gap:8px}
+.q-num{font-size:10px;color:var(--gris);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.q-text{font-family:'Playfair Display',serif;font-size:clamp(15px,3.5vw,21px);line-height:1.5;margin-bottom:18px}
+
+/* ═══════════════════════════════════════
+   PAGE 4 — PUB INTER-QUESTION
+═══════════════════════════════════════ */
+#pg-ad{background:var(--fond);justify-content:center}
+.ad-inter{width:100%;max-width:var(--page-w);padding:32px 20px;text-align:center}
+.ad-inter-top{font-size:11px;color:var(--gris);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+.ad-inter-box{background:var(--card2);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:32px 20px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}
+.ad-inter-ico{font-size:36px}
+.ad-inter-txt{font-size:13px;color:var(--gris2);line-height:1.6}
+.ad-skip-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.ad-skip-fill{height:100%;background:var(--or);border-radius:2px;width:0%}
+.ad-skip-lbl{font-size:11px;color:var(--gris);text-align:center;margin-bottom:14px}
+.ad-skip-btn{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;background:transparent;border:1.5px solid rgba(255,255,255,.15);color:var(--texte);padding:12px 28px;border-radius:8px;cursor:pointer;transition:all .2s;display:none}
+.ad-skip-btn.show{display:inline-block}
+.ad-skip-btn:hover{border-color:var(--vert);color:var(--vert)}
+
+/* ═══════════════════════════════════════
+   PAGE 5 — RÉSULTATS
+═══════════════════════════════════════ */
+#pg-result{background:var(--fond);justify-content:center}
+.result-ring{width:160px;height:160px;margin:0 auto 24px;position:relative}
+.result-ring svg{transform:rotate(-90deg)}
+.result-score-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rscore-n{font-family:'Bebas Neue',sans-serif;font-size:54px;color:var(--or);line-height:1}
+.rscore-d{font-size:12px;color:var(--gris)}
+.result-title{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:4px;margin-bottom:6px;text-align:center}
+.result-msg{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--or);margin-bottom:28px;text-align:center}
+
+/* ═══════════════════════════════════════
+   CHAPÎTRE LOADING
+═══════════════════════════════════════ */
+.loading-spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ██████████████████████████████████████
+     PAGE 1 : ACCUEIL / SPLASH
+██████████████████████████████████████ -->
+<div class="page active" id="pg-home">
+  <div class="page-inner" style="display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;min-height:100vh;padding-bottom:80px">
+
+    <!-- AD HAUT -->
+    <div class="ad-box" style="width:100%;max-width:var(--page-w);margin-bottom:24px">
+      <span class="adlbl">Annonce</span>
+      <div class="adico">🎯</div>
+      <div class="adtxt">Espace Google AdSense — <strong>728×90</strong><br>Ajoutez votre ID <code>ca-pub-XXXX</code> pour monétiser</div>
+      <a href="https://adsense.google.com" target="_blank" class="adcta">Activer AdSense →</a>
+    </div>
+
+    <div class="logo-ring"><div class="logo-center">GBA</div></div>
+    <div class="home-sub">Grand Quiz de la</div>
+    <div class="home-title">CÔTE D'IVOIRE</div>
+    <div class="home-tag">Culture · Histoire · Guerres · Rap · Photos</div>
+
+    <div class="home-stats" style="width:100%;max-width:var(--page-w)">
+      <div class="hstat"><div class="hn" id="stat-q">42</div><div class="hl">Questions</div></div>
+      <div class="hstat"><div class="hn">9</div><div class="hl">Catégories</div></div>
+      <div class="hstat"><div class="hn">2</div><div class="hl">Modes</div></div>
+    </div>
+
+    <div style="width:100%;max-width:var(--page-w)">
+      <button class="btn-main" onclick="goTo('pg-mode')">JOUER MAINTENANT →</button>
+    </div>
+
+    <div style="margin-top:20px;font-size:11px;color:var(--gris);text-align:center">
+      Côte d'Ivoire · Guerres Mondiales · Rap Ivoirien
+    </div>
+  </div>
+</div>
+
+<!-- ██████████████████████████████████████
+     PAGE 2 : CHOIX DU MODE
+██████████████████████████████████████ -->
+<div class="page" id="pg-mode">
+  <div class="page-inner">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;padding-top:8px">
+      <button onclick="goBack('pg-home')" style="background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:10px;width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--texte);flex-shrink:0">←</button>
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px">CHOISIR UN MODE</div>
+        <div style="font-size:11px;color:var(--gris)">Sélectionne comment tu veux jouer</div>
+      </div>
+    </div>
+
+    <!-- MODE TEXTE -->
+    <div class="mode-card" onclick="startGame('text')">
+      <div class="mc-ico">📝</div>
+      <div class="mc-body">
+        <div class="mc-title">QUIZ TEXTE</div>
+        <div class="mc-desc">4 réponses en texte — questions aléatoires sur tous les thèmes ivoiriens et mondiaux.</div>
+        <span class="mc-new" style="background:rgba(0,154,68,.12);border-color:rgba(0,154,68,.3);color:var(--vert)">✓ CLASSIQUE</span>
+      </div>
+      <div class="mc-arr">›</div>
+    </div>
+
+    <!-- MODE PHOTO -->
+    <div class="mode-card" onclick="startGame('photo')">
+      <div class="mc-ico">📸</div>
+      <div class="mc-body">
+        <div class="mc-title">QUIZ PHOTOS</div>
+        <div class="mc-desc">Clique sur la bonne photo parmi 4 images ! Reconnais monuments, personnages et batailles.</div>
+        <span class="mc-new">⭐ NOUVEAU</span>
+      </div>
+      <div class="mc-arr">›</div>
+    </div>
+
+    <!-- AD MID -->
+    <div class="ad-box">
+      <span class="adlbl">Annonce</span>
+      <div class="adico">💡</div>
+      <div class="adtxt">Google AdSense — Bannière 320×100<br>Gagnez de l'argent à chaque visite</div>
+      <a href="https://adsense.google.com" target="_blank" class="adcta">Créer mon compte</a>
+    </div>
+
+    <div style="margin-top:6px;background:var(--card2);border-radius:12px;padding:14px 16px">
+      <div style="font-size:11px;color:var(--gris2);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-size:10px">CATÉGORIES DISPONIBLES</div>
+      <div id="cat-list" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ██████████████████████████████████████
+     PAGE 3 : QUESTION EN COURS
+██████████████████████████████████████ -->
+<div class="page" id="pg-question">
+  <div class="page-inner">
+
+    <!-- Header stats -->
+    <div class="q-header">
+      <div class="q-stats">
+        <div class="pill">✅ <span class="v" id="q-score">0</span></div>
+        <div class="pill">🔥 <span class="v" id="q-streak">0</span></div>
+      </div>
+      <div class="pill">❓ <span class="v" id="q-num">1/10</span></div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap"><div class="progress-fill" id="q-pb" style="width:0%"></div></div>
+
+    <!-- Catégorie + mode -->
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="cat-badge" id="q-cat">—</div>
+      <div id="q-modebadge" class="mode-badge-photo" style="display:none">📸 PHOTOS</div>
+    </div>
+
+    <div class="q-num" id="q-label">QUESTION 1</div>
+
+    <!-- Image de question (mode texte) -->
+    <div class="q-img" id="q-img">
+      <div class="shimmer" id="q-shim"></div>
+      <div class="emoj" id="q-emoj"></div>
+      <img id="q-imgel" src="" alt="">
+      <div class="credit" id="q-credit"></div>
+    </div>
+
+    <!-- Texte de la question -->
+    <div class="q-text" id="q-text">…</div>
+
+    <!-- Timer -->
+    <div class="timer-row">
+      <svg class="tarc" viewBox="0 0 44 44">
+        <circle class="bg" cx="22" cy="22" r="18"/>
+        <circle class="fg" id="q-timerCirc" cx="22" cy="22" r="18" stroke-dasharray="113" stroke-dashoffset="0"/>
+      </svg>
+      <span class="tlbl" id="q-timerLbl">20</span>
+    </div>
+
+    <!-- OPTIONS : texte -->
+    <div class="opts-text" id="q-opts-text"></div>
+
+    <!-- OPTIONS : photos -->
+    <div class="opts-photo" id="q-opts-photo" style="display:none"></div>
+
+    <!-- Explication -->
+    <div class="exp-box" id="q-exp"></div>
+
+    <!-- Auto-next -->
+    <div class="an-wrap">
+      <div class="an-lbl" id="q-anlbl">SUIVANTE DANS <span id="q-ancnt">4</span>s…</div>
+      <div class="an-bar" id="q-anbar"><div class="an-fill" id="q-anfill"></div></div>
+    </div>
+
+    <button class="btn-main sm outline" id="q-btnnext" onclick="nextQ()" style="display:none">SUIVANT →</button>
+
+  </div>
+</div>
+
+<!-- ██████████████████████████████████████
+     PAGE 4 : INTERSTITIEL PUB
+     (apparaît à mi-jeu, question 5)
+██████████████████████████████████████ -->
+<div class="page" id="pg-ad">
+  <div class="ad-inter">
+    <div class="ad-inter-top">⏸ PAUSE PUBLICITAIRE</div>
+    <div class="ad-inter-box">
+      <ins class="adsbygoogle" style="display:block;width:100%;height:150px"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXXX"
+           data-ad-slot="XXXXXXXXXX"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+      <!-- Fallback visuel -->
+      <div id="ad-inter-fallback" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="ad-inter-ico">📢</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--or)">ESPACE PUBLICITAIRE</div>
+        <div class="ad-inter-txt">Ici apparaîtra votre annonce Google AdSense<br><strong>300×250</strong> ou <strong>320×100</strong></div>
+        <a href="https://adsense.google.com" target="_blank" class="adcta" style="font-size:12px;border:1px solid rgba(244,121,32,.35);border-radius:20px;padding:6px 18px;color:var(--orange);text-decoration:none;font-weight:600">Activer AdSense →</a>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--texte)">🎯 TU ES À MI-CHEMIN !</div>
+      <div style="font-size:12px;color:var(--gris2);margin-top:4px">Continue pour finir le quiz et voir ton score</div>
+    </div>
+
+    <div class="ad-skip-bar"><div class="ad-skip-fill" id="ad-skip-fill"></div></div>
+    <div class="ad-skip-lbl" id="ad-skip-lbl">Patiente <span id="ad-skip-cnt">5</span>s...</div>
+    <div style="text-align:center">
+      <button class="ad-skip-btn" id="ad-skip-btn" onclick="skipAd()">CONTINUER LE QUIZ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ██████████████████████████████████████
+     PAGE 5 : RÉSULTATS
+██████████████████████████████████████ -->
+<div class="page" id="pg-result">
+  <div class="page-inner" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-bottom:100px;padding-top:36px">
+
+    <div class="result-ring">
+      <svg width="160" height="160" viewBox="0 0 160 160">
+        <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="10"/>
+        <circle id="r-arc" cx="80" cy="80" r="68" fill="none"
+          stroke="var(--or)" stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="427" stroke-dashoffset="427"
+          style="transition:stroke-dashoffset 1.3s ease;transform:rotate(-90deg);transform-origin:50% 50%"/>
+      </svg>
+      <div class="result-score-txt">
+        <div class="rscore-n" id="r-score">0</div>
+        <div class="rscore-d" id="r-tot">/10</div>
+      </div>
+    </div>
+
+    <div class="result-title" id="r-title">BIEN JOUÉ !</div>
+    <div class="result-msg" id="r-msg">Tu maîtrises ces sujets.</div>
+
+    <div class="recap" id="r-recap"></div>
+
+    <!-- Stats détaillées -->
+    <div style="display:flex;gap:10px;width:100%;margin-bottom:24px">
+      <div class="hstat" style="flex:1"><div class="hn" id="r-correct" style="color:var(--vert)">0</div><div class="hl">Correctes</div></div>
+      <div class="hstat" style="flex:1"><div class="hn" id="r-wrong" style="color:#E53935">0</div><div class="hl">Incorrectes</div></div>
+      <div class="hstat" style="flex:1"><div class="hn" id="r-pct" style="color:var(--or)">0%</div><div class="hl">Score</div></div>
+    </div>
+
+    <!-- AD résultat -->
+    <div class="ad-box" style="width:100%">
+      <span class="adlbl">Annonce</span>
+      <div class="adico">🚀</div>
+      <div class="adtxt"><strong>Monétisez le GBA</strong> avec Google AdSense<br>Inscrivez-vous gratuitement</div>
+      <a href="https://adsense.google.com" target="_blank" class="adcta">Commencer →</a>
+    </div>
+
+    <button class="btn-main" onclick="startGame(currentMode)" style="margin-top:8px">REJOUER ↺</button>
+    <button class="btn-main outline" onclick="goTo('pg-mode');goBack('pg-mode')" style="margin-top:10px">← CHANGER DE MODE</button>
+    <button class="btn-main outline" onclick="goTo('pg-home');history.go(-4)" style="margin-top:10px">🏠 ACCUEIL</button>
+
+  </div>
+</div>
+
+<!-- ██████████████████████████████████████
+     BARRE PUB STICKY BAS
+██████████████████████████████████████ -->
+<div class="ad-stick" id="ad-sticky">
+  <div class="ad-stick-content">
+    <span class="ad-label-small">Annonce</span>
+    <div class="ad-close-btn" onclick="document.getElementById('ad-sticky').style.display='none'">✕</div>
+    <ins class="adsbygoogle" style="display:block;width:100%;height:50px"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXXX"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    <div style="font-size:11px;color:var(--gris2);text-align:center">
+      📢 <strong style="color:var(--or)">GBA Quiz</strong> — Publicité Google AdSense
+      <a href="https://adsense.google.com" target="_blank" style="color:var(--orange);text-decoration:none;margin-left:6px;font-size:10px">Activer</a>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   PROXY IMAGES (contourne CORS Wikipedia)
+═══════════════════════════════════════════════════════ */
+function px(u){return'https://images.weserv.nl/?url='+encodeURIComponent(u)+'&w=600&h=400&fit=cover&output=webp&q=80'}
+
+const I={
+  ci_flag:  px('upload.wikimedia.org/wikipedia/commons/f/fe/Flag_of_C%C3%B4te_d%27Ivoire.svg'),
+  houf:     px('upload.wikimedia.org/wikipedia/commons/6/6e/Felix_Houphouet-Boigny.jpg'),
+  basilique:px('upload.wikimedia.org/wikipedia/commons/4/44/Yamoussoukro_Basilika_Aussenansicht.jpg'),
+  abidjan:  px('upload.wikimedia.org/wikipedia/commons/2/23/Abidjan_plateau.jpg'),
+  elephant: px('upload.wikimedia.org/wikipedia/commons/2/26/African_elephant_warning_raised_trunk.jpg'),
+  nimba:    px('upload.wikimedia.org/wikipedia/commons/e/e8/Mont_Nimba.jpg'),
+  cacao:    px('upload.wikimedia.org/wikipedia/commons/3/31/Cocoa_beans_on_white_background.jpg'),
+  port:     px('upload.wikimedia.org/wikipedia/commons/c/c6/Port_d%27Abidjan.jpg'),
+  cfa:      px('upload.wikimedia.org/wikipedia/commons/7/72/CFA_franc_BCEAO_banknotes.jpg'),
+  drogba:   px('upload.wikimedia.org/wikipedia/commons/0/0e/Didier_Drogba_2012.jpg'),
+  yaya:     px('upload.wikimedia.org/wikipedia/commons/b/b8/Yaya_Tour%C3%A9_2012.jpg'),
+  attieke:  px('upload.wikimedia.org/wikipedia/commons/2/27/Attieke.jpg'),
+  yopo:     px('upload.wikimedia.org/wikipedia/commons/b/b0/Yopougon_Abidjan.jpg'),
+  abobo:    px('upload.wikimedia.org/wikipedia/commons/5/5e/Abobo_Abidjan.jpg'),
+  trench:   px('upload.wikimedia.org/wikipedia/commons/5/51/Cheshire_Regiment_trench_Somme_1916.jpg'),
+  normandie:px('upload.wikimedia.org/wikipedia/commons/a/a5/Into_the_Jaws_of_Death_23-0455M_edit.jpg'),
+  hiroshima:px('upload.wikimedia.org/wikipedia/commons/5/54/Atomic_bombing_of_Japan.jpg'),
+  holocaust:px('upload.wikimedia.org/wikipedia/commons/2/27/Auschwitz_I_gate.jpg'),
+  pearl:    px('upload.wikimedia.org/wikipedia/commons/d/d3/Attack_on_Pearl_Harbor_Japanese_planes_view.jpg'),
+  berlin:   px('upload.wikimedia.org/wikipedia/commons/6/63/Berlin_wall_1961-11-20.jpg'),
+  rwanda:   px('upload.wikimedia.org/wikipedia/commons/1/19/Rwandan_genocide_memorial.jpg'),
+  ukraine:  px('upload.wikimedia.org/wikipedia/commons/4/49/War_in_Ukraine_2022.jpg'),
+  ww2:      px('upload.wikimedia.org/wikipedia/commons/1/18/Adolf_Hitler_1933.jpg'),
+  verdun:   px('upload.wikimedia.org/wikipedia/commons/5/56/Verdun_battlefield.jpg'),
+  franz:    px('upload.wikimedia.org/wikipedia/commons/4/4d/Assassination_of_Archduke_Franz_Ferdinand.jpg'),
+  vietnam:  px('upload.wikimedia.org/wikipedia/commons/d/d5/TET_Offensive_Saigon.jpg'),
+};
+
+/* ═══════════════════════════════════════════════════════
+   QUESTIONS TEXTE
+═══════════════════════════════════════════════════════ */
+const QS_TEXT=[
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.ci_flag,credit:"Drapeau CI",
+   link:"https://fr.wikipedia.org/wiki/Histoire_de_la_C%C3%B4te_d%27Ivoire",
+   q:"En quelle année la Côte d'Ivoire a-t-elle obtenu son indépendance ?",
+   opts:["1958","1960","1962","1965"],ans:1,
+   exp:"Le <strong>7 août 1960</strong>, la Côte d'Ivoire proclame son indépendance. Félix Houphouët-Boigny en devient le 1er président."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.houf,credit:"Félix Houphouët-Boigny",
+   link:"https://fr.wikipedia.org/wiki/F%C3%A9lix_Houphou%C3%ABt-Boigny",
+   q:"Qui fut le premier président de la Côte d'Ivoire ?",
+   opts:["Laurent Gbagbo","Alassane Ouattara","Félix Houphouët-Boigny","Henri Konan Bédié"],ans:2,
+   exp:"<strong>Félix Houphouët-Boigny</strong> (1905–1993), le Père de la Nation, présida la CI de 1960 à sa mort en 1993."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.basilique,credit:"Basilique de Yamoussoukro",
+   link:"https://fr.wikipedia.org/wiki/Basilique_Notre-Dame-de-la-Paix",
+   q:"Qui a financé la construction de la Basilique Notre-Dame-de-la-Paix de Yamoussoukro ?",
+   opts:["Henri Konan Bédié","Félix Houphouët-Boigny","Laurent Gbagbo","Alassane Ouattara"],ans:1,
+   exp:"<strong>Félix Houphouët-Boigny</strong> a financé cette basilique inaugurée en 1990 par Jean-Paul II."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.elephant,credit:"Éléphant d'Afrique",
+   link:"https://fr.wikipedia.org/wiki/C%C3%B4te_d%27Ivoire",
+   q:"Quel animal figure en emblème sur les armoiries de la Côte d'Ivoire ?",
+   opts:["Le lion","L'éléphant","Le baobab","L'aigle"],ans:1,
+   exp:"L'<strong>éléphant</strong> est l'animal national, symbole de force — d'où le surnom « Pays de l'Éléphant »."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.ci_flag,credit:"Fête nationale CI",
+   link:"https://fr.wikipedia.org/wiki/C%C3%B4te_d%27Ivoire",
+   q:"Quelle est la date de la fête nationale de la Côte d'Ivoire ?",
+   opts:["1er janvier","7 août","11 décembre","17 octobre"],ans:1,
+   exp:"Le <strong>7 août</strong> commémore chaque année l'indépendance de 1960."},
+  {cat:"Géographie",icon:"🗺️",img:I.abidjan,credit:"Abidjan",
+   link:"https://fr.wikipedia.org/wiki/Abidjan",
+   q:"Quelle est la plus grande ville de Côte d'Ivoire en population ?",
+   opts:["Yamoussoukro","San-Pédro","Bouaké","Abidjan"],ans:3,
+   exp:"<strong>Abidjan</strong>, capitale économique, compte 5 à 6 millions d'habitants dans son agglomération."},
+  {cat:"Géographie",icon:"🗺️",img:I.nimba,credit:"Mont Nimba",
+   link:"https://fr.wikipedia.org/wiki/Mont_Nimba",
+   q:"Le Mont Nimba, point culminant de Côte d'Ivoire — quelle est son altitude ?",
+   opts:["1 752 m","1 060 m","2 340 m","890 m"],ans:0,
+   exp:"Le <strong>Mont Nimba</strong> culmine à <strong>1 752 m</strong>. Classé UNESCO, il est partagé avec la Guinée et le Libéria."},
+  {cat:"Géographie",icon:"🗺️",img:I.abidjan,credit:"Lagune Ébrié",
+   link:"https://fr.wikipedia.org/wiki/Com%C3%A9_(fleuve)",
+   q:"Quel fleuve se jette dans la lagune Ébrié d'Abidjan ?",
+   opts:["Le Bandama","Le Sassandra","La Comoé","Le Gbâ"],ans:2,
+   exp:"La <strong>Comoé</strong> est le plus long fleuve du pays. Il se jette dans l'Atlantique via la lagune Ébrié."},
+  {cat:"Économie",icon:"💰",img:I.cacao,credit:"Fèves de cacao",
+   link:"https://fr.wikipedia.org/wiki/Cacao",
+   q:"La Côte d'Ivoire est le 1er producteur mondial de quelle matière première ?",
+   opts:["Café","Caoutchouc","Cacao","Anacarde"],ans:2,
+   exp:"La CI produit <strong>40–45 % du cacao mondial</strong>, 1er rang depuis des décennies."},
+  {cat:"Économie",icon:"💰",img:I.cfa,credit:"Franc CFA",
+   link:"https://fr.wikipedia.org/wiki/Franc_CFA",
+   q:"Quelle est la monnaie officielle de la Côte d'Ivoire ?",
+   opts:["Le naira","Le dalasi","Le franc CFA (XOF)","Le cedi"],ans:2,
+   exp:"La CI utilise le <strong>franc CFA de l'Afrique de l'Ouest (XOF)</strong>, partagé par 8 pays de l'UEMOA."},
+  {cat:"Économie",icon:"💰",img:I.port,credit:"Port d'Abidjan",
+   link:"https://fr.wikipedia.org/wiki/Port_d%27Abidjan",
+   q:"Quel port ivoirien est le plus grand hub de transit d'Afrique de l'Ouest ?",
+   opts:["Port de San-Pédro","Port d'Abidjan","Port de Vridi","Port de Sassandra"],ans:1,
+   exp:"Le <strong>Port Autonome d'Abidjan</strong> est le 1er port à conteneurs d'Afrique de l'Ouest et Centrale."},
+  {cat:"Sport",icon:"⚽",img:I.drogba,credit:"Didier Drogba",
+   link:"https://fr.wikipedia.org/wiki/Didier_Drogba",
+   q:"Didier Drogba a marqué l'histoire de quel club anglais ?",
+   opts:["Arsenal","Manchester United","Chelsea","Liverpool"],ans:2,
+   exp:"<strong>Didier Drogba</strong> à <strong>Chelsea</strong> : 164 buts, dont le but légendaire en finale de LDC 2012."},
+  {cat:"Sport",icon:"⚽",img:I.yaya,credit:"Yaya Touré",
+   link:"https://fr.wikipedia.org/wiki/Yaya_Tour%C3%A9",
+   q:"Quel joueur ivoirien a remporté le Ballon d'Or Africain 4 fois de suite (2011–2014) ?",
+   opts:["Salomon Kalou","Gervinho","Didier Drogba","Yaya Touré"],ans:3,
+   exp:"<strong>Yaya Touré</strong> a été élu meilleur joueur africain 4 fois consécutivement."},
+  {cat:"Sport",icon:"⚽",img:I.ci_flag,credit:"Éléphants CI",
+   link:"https://fr.wikipedia.org/wiki/Coupe_d%27Afrique_des_nations_2024",
+   q:"La Côte d'Ivoire a organisé ET remporté la CAN pour la 1ère fois sur son sol en quelle année ?",
+   opts:["1984","2000","2024","2006"],ans:2,
+   exp:"La <strong>CAN 2024</strong> organisée en CI est remportée face au Nigeria. Victoire historique à domicile !"},
+  {cat:"Gastronomie",icon:"🍽️",img:I.attieke,credit:"Attiéké",
+   link:"https://fr.wikipedia.org/wiki/Attiek%C3%A9",
+   q:"L'attiéké ivoirien inscrit à l'UNESCO est fabriqué à partir de quelle plante ?",
+   opts:["Le maïs","L'igname","Le manioc","Le riz"],ans:2,
+   exp:"L'<strong>attiéké</strong> est une semoule fermentée à base de <strong>manioc</strong>, aliment emblématique de la CI."},
+  {cat:"Gastronomie",icon:"🍽️",img:I.abidjan,credit:"Maquis ivoirien",
+   link:"https://fr.wikipedia.org/wiki/Garba_(plat)",
+   q:"Quel est le plat de rue ivoirien à base d'attiéké et de thon braisé ?",
+   opts:["Le foutou","Le garba","Le kedjenou","L'alloco"],ans:1,
+   exp:"Le <strong>Garba</strong> (attiéké + thon braisé) est LA street food nationale d'Abidjan."},
+  {cat:"Culture & Traditions",icon:"🎭",img:I.abidjan,credit:"Culture CI",
+   link:"https://fr.wikipedia.org/wiki/Coup%C3%A9-d%C3%A9cal%C3%A9",
+   q:"Quel style musical ivoirien, né à Paris, a été popularisé par DJ Arafat ?",
+   opts:["Le Nouchi","Le Zoblazo","L'Afrobeats","Le Coupé-Décalé"],ans:3,
+   exp:"Le <strong>Coupé-Décalé</strong> est né dans la diaspora ivoirienne avant de conquérir toute l'Afrique."},
+  {cat:"Rap Ivoirien",icon:"🎤",img:I.yopo,credit:"Yopougon, Abidjan",
+   link:"https://fr.wikipedia.org/wiki/Yopougon",
+   q:"De quel quartier emblématique d'Abidjan est originaire le collectif Kiff No Beat ?",
+   opts:["Abobo","Yopougon","Koumassi","Treichville"],ans:1,
+   exp:"<strong>Kiff No Beat</strong> vient de <strong>Yopougon</strong> (« Yop City »), berceau de la culture urbaine CI."},
+  {cat:"Rap Ivoirien",icon:"🎤",img:I.yopo,credit:"Rap CI",
+   link:"https://fr.wikipedia.org/wiki/Kiff_No_Beat",
+   q:"Quel membre de Kiff No Beat a collaboré avec des rappeurs français comme Gradur ?",
+   opts:["Didi B","Kwami Yogot","Suspect 95","Sky"],ans:0,
+   exp:"<strong>Didi B</strong> a collaboré avec Gradur, prouvant le rayonnement du rap ivoirien à l'international."},
+  {cat:"Rap Ivoirien",icon:"🎤",img:I.abobo,credit:"Abobo, Abidjan",
+   link:"https://fr.wikipedia.org/wiki/Abobo_(Abidjan)",
+   q:"Quel quartier d'Abidjan est le plus cité dans le rap CI comme symbole de résilience ?",
+   opts:["Cocody","Marcory","Abobo","Plateau"],ans:2,
+   exp:"<strong>Abobo</strong> est le quartier le plus cité dans le rap ivoirien pour sa dureté et sa résilience."},
+  {cat:"Rap Ivoirien",icon:"🎤",img:I.yopo,credit:"Street culture CI",
+   link:"https://fr.wikipedia.org/wiki/Nouchi",
+   q:"Quel terme en nouchi signifie « l'argent » dans le rap CI ?",
+   opts:["Gbôlô","Woyo","Kpangor","Dja"],ans:0,
+   exp:"<strong>Gbôlô</strong> désigne l'argent en nouchi, l'argot des rues abidjanaises."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.trench,credit:"Tranchées WW1",
+   link:"https://fr.wikipedia.org/wiki/Premi%C3%A8re_Guerre_mondiale",
+   q:"En quelle année la Première Guerre mondiale a-t-elle commencé ?",
+   opts:["1912","1914","1916","1918"],ans:1,
+   exp:"La <strong>1ère GM</strong> débute le <strong>28 juillet 1914</strong> suite à l'assassinat de l'archiduc François-Ferdinand."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.verdun,credit:"Verdun 1916",
+   link:"https://fr.wikipedia.org/wiki/Bataille_de_Verdun",
+   q:"La bataille de Verdun (1916) a duré combien de mois ?",
+   opts:["3 mois","6 mois","10 mois","18 mois"],ans:2,
+   exp:"La <strong>bataille de Verdun</strong> dure <strong>10 mois</strong> (fév.–déc. 1916) et cause ~700 000 victimes."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.ww2,credit:"Seconde Guerre mondiale",
+   link:"https://fr.wikipedia.org/wiki/Seconde_Guerre_mondiale",
+   q:"Quel événement marque le début de la Seconde Guerre mondiale ?",
+   opts:["L'invasion de la Pologne","L'attaque de Pearl Harbor","L'annexion de l'Autriche","La chute de Paris"],ans:0,
+   exp:"La 2ème GM commence le <strong>1er sept. 1939</strong> avec l'<strong>invasion de la Pologne</strong> par l'Allemagne nazie."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.normandie,credit:"D-Day Normandie 1944",
+   link:"https://fr.wikipedia.org/wiki/D%C3%A9barquement_de_Normandie",
+   q:"Quel nom de code portait le débarquement allié en Normandie du 6 juin 1944 ?",
+   opts:["Opération Overlord","Opération Barbarossa","Opération Market Garden","Opération Torch"],ans:0,
+   exp:"L'<strong>Opération Overlord</strong> est le nom du D-Day en Normandie, plus grand débarquement amphibie de l'histoire."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.hiroshima,credit:"Bombe atomique 1945",
+   link:"https://fr.wikipedia.org/wiki/Bombardements_atomiques_d%27Hiroshima_et_Nagasaki",
+   q:"Sur quelle ville japonaise la première bombe atomique a-t-elle été larguée ?",
+   opts:["Tokyo","Nagasaki","Hiroshima","Osaka"],ans:2,
+   exp:"La bombe <em>Little Boy</em> sur <strong>Hiroshima</strong> le 6 août 1945 cause ~140 000 morts."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.holocaust,credit:"Auschwitz — Mémorial",
+   link:"https://fr.wikipedia.org/wiki/Shoah",
+   q:"Combien de millions de Juifs ont été exterminés pendant la Shoah ?",
+   opts:["~2 millions","~4 millions","~6 millions","~10 millions"],ans:2,
+   exp:"La <strong>Shoah</strong> a causé l'extermination d'environ <strong>6 millions de Juifs</strong> — les 2/3 de la population juive d'Europe."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.berlin,credit:"Mur de Berlin",
+   link:"https://fr.wikipedia.org/wiki/Chute_du_mur_de_Berlin",
+   q:"En quelle année le Mur de Berlin est-il tombé ?",
+   opts:["1985","1987","1989","1991"],ans:2,
+   exp:"Le <strong>Mur de Berlin</strong> tombe le <strong>9 novembre 1989</strong>, marquant la fin de la Guerre Froide."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.rwanda,credit:"Génocide Rwanda",
+   link:"https://fr.wikipedia.org/wiki/G%C3%A9nocide_des_Tutsi_au_Rwanda",
+   q:"En quelle année s'est déroulé le génocide du Rwanda ?",
+   opts:["1990","1992","1994","1996"],ans:2,
+   exp:"Le <strong>génocide du Rwanda</strong> (1994) : environ 800 000 victimes en 100 jours."},
+  {cat:"Guerres & Conflits",icon:"⚔️",img:I.ukraine,credit:"Guerre en Ukraine",
+   link:"https://fr.wikipedia.org/wiki/Invasion_de_l%27Ukraine_par_la_Russie",
+   q:"En quelle année la Russie a-t-elle lancé son invasion à grande échelle de l'Ukraine ?",
+   opts:["2014","2019","2022","2023"],ans:2,
+   exp:"Le <strong>24 février 2022</strong>, la Russie envahit l'Ukraine — plus grande guerre en Europe depuis 1945."},
+  {cat:"Art & Littérature",icon:"📚",img:I.ci_flag,credit:"Littérature CI",
+   link:"https://fr.wikipedia.org/wiki/Ahmadou_Kourouma",
+   q:"Qui a écrit « Les Soleils des Indépendances » (1968), chef-d'œuvre littéraire africain ?",
+   opts:["Ahmadou Kourouma","Bernard Dadié","Véronique Tadjo","Jean-Marie Adiaffi"],ans:0,
+   exp:"<strong>Ahmadou Kourouma</strong> (1927–2003) est l'auteur de ce roman fondateur de la littérature africaine francophone."},
+];
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.houf,credit:"Félix Houphouët-Boigny",
+   q:"Qui fut le premier président de la Côte d'Ivoire ?",
+   opts:["Laurent Gbagbo","Alassane Ouattara","Félix Houphouët-Boigny","Henri Konan Bédié"],ans:2,
+   exp:"<strong>Félix Houphouët-Boigny</strong> (1905–1993), le Père de la Nation, présida la CI de 1960 à sa mort en 1993."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.basilique,credit:"Basilique de Yamoussoukro",
+   q:"Qui a financé la construction de la Basilique Notre-Dame-de-la-Paix de Yamoussoukro ?",
+   opts:["Henri Konan Bédié","Félix Houphouët-Boigny","Laurent Gbagbo","Alassane Ouattara"],ans:1,
+   exp:"<strong>Félix Houphouët-Boigny</strong> a financé cette basilique inaugurée en 1990 par Jean-Paul II."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.elephant,credit:"Éléphant d'Afrique",
+   q:"Quel animal figure en emblème sur les armoiries de la Côte d'Ivoire ?",
+   opts:["Le lion","L'éléphant","Le baobab","L'aigle"],ans:1,
+   exp:"L'<strong>éléphant</strong> est l'animal national, symbole de force — d'où le surnom « Pays de l'Éléphant »."},
+  {cat:"Histoire & Politique",icon:"🏛️",img:I.ci_flag,credit:"Fête nationale CI",
+   q:"Quelle est la date de la fête nationale de la Côte d'Ivoire ?",
+   opts:["1er janvier","7 août","11 décembre","17 octobre"],ans:1,
+   exp:"Le <strong>7 août</strong> commémore chaque année l'indépendance de 1960."},
+  {cat:"Géographie",icon:"🗺️",img:I.abidjan,credit:"Abidjan",
+   q:"Quelle est la plus grande ville de Côte d'Ivoire en population ?",
+   opts:["Yamoussoukro","San-Pédro","Bouaké","Abidjan"],ans:3,
+   exp:"<strong>Abidjan</strong>, capitale économique, compte 5 à 6 millions d'habitants dans son agglomération."},
+  {cat:"Géographie",icon:"🗺️",img:I.nimba,credit:"Mont Nimba",
+   q:"Le Mont Nimba, point culminant de Côte d'Ivoire — quelle est son altitude ?",
+   opts:["1 752 m","1 060 m","2 340 m","890 m"],ans:0,
+   exp:"Le <strong>Mont Nimba</strong> culmine à <strong>1 752 m</strong>. Classé UNESCO, il est partagé avec la Guinée et le Libéria."},
+  {cat:"Géographie",icon:"🗺️",img:I.abidjan,credit:"Lagune Ébrié",
+   q:"Quel fleuve se jette dans la lagune Ébrié d'Abidjan ?",
+   opts:["Le Bandama","Le Sassandra","La Comoé","Le Gbâ"],ans:2,
+   exp:"La <strong>Comoé</strong> est le plus long fleuve du pays. Il se jette dans l'Atlantique via la lagune Ébrié."},
+  {cat:"Économie",icon:"💰",img:I.cacao,credit:"Fèves de cacao",
+   q:"La Côte d'Ivoire est le 1er producteur mondial de quelle matière première ?",
+   opts:["Café","Caoutchouc","Cacao","Anacarde"],ans:2,
+   exp:"La CI produit <strong>40–45 % du cacao mondial</strong>, 1er rang depuis des décennies."},
+  {cat:"Économie",icon:"💰",img:I.cfa,credit:"Franc CFA",
+   q:"Quelle est la monnaie officielle de la Côte d'Ivoire ?",
+   opts:["Le naira","Le dalasi","Le franc CFA (XOF)","Le cedi"],ans:2,
+   exp:"La CI utilise le <strong>franc CFA de l'Afrique de l'Ouest (XOF)</strong>, partagé par 8 pays de l'UEMOA."},
+  {cat:"Économie",icon:"💰",img:I.port,credit:"Port d'Abidjan",
+   q:"Quel port ivoirien est le plus grand hub de transit d'Afrique de l'Ouest ?",
+   opts:["Port de San-Pédro","Port d'Abidjan","Port de Vridi","Port de Sassandra"],ans:1,
+   exp:"Le <strong>Port Autonome d'Abidjan</strong> est le 1er port à conteneurs d'Afrique de l'Ouest et Centrale."},
+  {cat:"Sport",icon:"⚽",img:I.drogba,credit:"Didier Drogba",
+   q:"Didier Drogba a marqué l'histoire de quel club anglais ?",
+   opts:["Arsenal","Manchester United","Chelsea","Liverpool"],ans:2,
+   exp:"<strong>Didier Drogba</strong> à <strong>Chelsea</strong> : 164 buts, dont le but légendaire en finale de LDC 2012."},
+  {cat:"Sport",icon:"⚽",img:I.yaya,credit:"Yaya Touré",
+   q:"Quel joueur ivoirien a remporté le Ballon d'Or Africain 4 fois de suite (2011–2014) ?",
+   opts:["Salomon Kalou","Gervinho","Didier Drogba","Yaya Touré"],ans:3,
+   exp:"<strong>Yaya Touré</strong> a été élu meilleur joueur africain 4 fois consécutivement."},
+  {cat:"Sport",icon:"⚽",img:I.ci_flag,credit:"Éléphants CI",
+   q:"La Côte d'Ivoire a organisé ET remporté la CAN pour la 1ère fois sur son sol en quelle année ?",
+   opts:["1984","2000","2024","2006"],ans:2,
+   exp:"La <strong>CAN 2024</strong> organisée en CI est remportée face au Nigeria. Victoire historique à domicile !"},
+  {cat:"Gastronomie",icon:"🍽️",img:I.attieke,credit:"Attiéké",
+   q:"L'attiéké ivoirien inscrit à l'UNESCO est fabriqué à partir de quelle plante ?",
+   opts:["Le maïs","L'igname","Le manioc","Le riz"],ans:2,
+   exp:"L'<strong>attiéké</strong> est une semoule fermentée à base de <strong>manioc</strong>, aliment emblématique de la CI."},
+/* ═══════════════════════════════════════════════════════
+   QUESTIONS PHOTOS
+═══════════════════════════════════════════════════════ */
+const QS_PHOTO=[
+  {cat:"Histoire & Politique",icon:"🏛️",
+   link:"https://fr.wikipedia.org/wiki/Basilique_Notre-Dame-de-la-Paix",
+   q:"Quelle image montre la Basilique Notre-Dame-de-la-Paix de Yamoussoukro ?",
+   ans:0,
+   opts:[{l:"Basilique Yamoussoukro",img:I.basilique,e:"⛪"},{l:"Abidjan by night",img:I.abidjan,e:"🌃"},{l:"Mont Nimba",img:I.nimba,e:"⛰️"},{l:"Port d'Abidjan",img:I.port,e:"⚓"}],
+   exp:"La <strong>Basilique Notre-Dame-de-la-Paix</strong> de Yamoussoukro, financée par Houphouët-Boigny, est l'une des plus grandes du monde."},
+  {cat:"Histoire & Politique",icon:"🏛️",
+   link:"https://fr.wikipedia.org/wiki/F%C3%A9lix_Houphou%C3%ABt-Boigny",
+   q:"Quel président ivoirien est représenté ici — le Père de la Nation (1960-1993) ?",
+   ans:0,
+   opts:[{l:"Houphouët-Boigny",img:I.houf,e:"🏛️"},{l:"Yaya Touré",img:I.yaya,e:"🏆"},{l:"Didier Drogba",img:I.drogba,e:"⚽"},{l:"Cacao CI",img:I.cacao,e:"🍫"}],
+   exp:"<strong>Félix Houphouët-Boigny</strong> (1905-1993) est le Père de la Nation ivoirienne. Il présida la CI pendant toute la période post-indépendance."},
+  {cat:"Économie",icon:"💰",
+   link:"https://fr.wikipedia.org/wiki/Cacao",
+   q:"Quelle image représente le principal produit d'exportation de la Côte d'Ivoire ?",
+   ans:0,
+   opts:[{l:"Cacao",img:I.cacao,e:"🍫"},{l:"Billets CFA",img:I.cfa,e:"💵"},{l:"Port d'Abidjan",img:I.port,e:"⚓"},{l:"Attiéké",img:I.attieke,e:"🍚"}],
+   exp:"Le <strong>cacao</strong> est le 1er produit d'exportation ivoirien. La CI produit 40–45% du cacao mondial."},
+  {cat:"Sport",icon:"⚽",
+   link:"https://fr.wikipedia.org/wiki/Didier_Drogba",
+   q:"Quel joueur ivoirien, légende de Chelsea FC, est représenté ici ?",
+   ans:0,
+   opts:[{l:"Didier Drogba",img:I.drogba,e:"⚽"},{l:"Yaya Touré",img:I.yaya,e:"🏆"},{l:"Houphouët-Boigny",img:I.houf,e:"🏛️"},{l:"Attiéké",img:I.attieke,e:"🍚"}],
+   exp:"<strong>Didier Drogba</strong> a signé à Chelsea en 2004 : 164 buts dont la finale de LDC 2012."},
+  {cat:"Sport",icon:"⚽",
+   link:"https://fr.wikipedia.org/wiki/Yaya_Tour%C3%A9",
+   q:"Quel joueur ivoirien 4x Ballon d'Or Africain (2011-2014) est représenté ici ?",
+   ans:0,
+   opts:[{l:"Yaya Touré",img:I.yaya,e:"🏆"},{l:"Didier Drogba",img:I.drogba,e:"⚽"},{l:"Abidjan",img:I.abidjan,e:"🌃"},{l:"Drapeau CI",img:I.ci_flag,e:"🇨🇮"}],
+   exp:"<strong>Yaya Touré</strong> a été élu meilleur joueur africain 4 fois consécutivement (2011-2014)."},
+  {cat:"Gastronomie",icon:"🍽️",
+   link:"https://fr.wikipedia.org/wiki/Attiek%C3%A9",
+   q:"Quelle image montre l'attiéké, semoule ivoirienne inscrite à l'UNESCO ?",
+   ans:0,
+   opts:[{l:"Attiéké",img:I.attieke,e:"🍚"},{l:"Cacao",img:I.cacao,e:"🍫"},{l:"Abidjan",img:I.abidjan,e:"🌃"},{l:"Yopougon",img:I.yopo,e:"🏘️"}],
+   exp:"L'<strong>attiéké</strong> est une semoule fermentée à base de manioc, inscrite au patrimoine immatériel de l'UNESCO."},
+  {cat:"Géographie",icon:"🗺️",
+   link:"https://fr.wikipedia.org/wiki/Abidjan",
+   q:"Quelle image montre Abidjan, la capitale économique de Côte d'Ivoire ?",
+   ans:0,
+   opts:[{l:"Abidjan",img:I.abidjan,e:"🌃"},{l:"Yopougon",img:I.yopo,e:"🏘️"},{l:"Abobo",img:I.abobo,e:"🏙️"},{l:"Mont Nimba",img:I.nimba,e:"⛰️"}],
+   exp:"<strong>Abidjan</strong> est la capitale économique de la CI. Son quartier du Plateau est le CBD de l'Afrique de l'Ouest francophone."},
+  {cat:"Guerres & Conflits",icon:"⚔️",
+   link:"https://fr.wikipedia.org/wiki/D%C3%A9barquement_de_Normandie",
+   q:"Quelle image montre le débarquement allié (D-Day) en Normandie le 6 juin 1944 ?",
+   ans:0,
+   opts:[{l:"Normandie D-Day",img:I.normandie,e:"🚢"},{l:"Tranchées WW1",img:I.trench,e:"💣"},{l:"Mur de Berlin",img:I.berlin,e:"🧱"},{l:"Verdun",img:I.verdun,e:"⚔️"}],
+   exp:"L'<strong>Opération Overlord</strong> (6 juin 1944) est le plus grand débarquement amphibie de l'histoire — tournant décisif de la WW2."},
+  {cat:"Guerres & Conflits",icon:"⚔️",
+   link:"https://fr.wikipedia.org/wiki/Premi%C3%A8re_Guerre_mondiale",
+   q:"Quelle image montre les soldats dans les tranchées de la Première Guerre mondiale ?",
+   ans:0,
+   opts:[{l:"Tranchées WW1",img:I.trench,e:"💣"},{l:"Mur de Berlin",img:I.berlin,e:"🧱"},{l:"Hiroshima",img:I.hiroshima,e:"☢️"},{l:"Pearl Harbor",img:I.pearl,e:"✈️"}],
+   exp:"Les <strong>tranchées</strong> de la WW1 (1914-1918) symbolisent l'horreur du conflit. La bataille de Verdun à elle seule a causé ~700 000 morts."},
+  {cat:"Guerres & Conflits",icon:"⚔️",
+   link:"https://fr.wikipedia.org/wiki/Bombardements_atomiques_d%27Hiroshima_et_Nagasaki",
+   q:"Quelle image représente le bombardement atomique d'Hiroshima en 1945 ?",
+   ans:0,
+   opts:[{l:"Bombe atomique",img:I.hiroshima,e:"☢️"},{l:"Débarquement",img:I.normandie,e:"🚢"},{l:"Pearl Harbor",img:I.pearl,e:"✈️"},{l:"Tranchées",img:I.trench,e:"💣"}],
+   exp:"La bombe <em>Little Boy</em> larguée sur <strong>Hiroshima</strong> le 6 août 1945 cause ~140 000 morts et change l'histoire de l'humanité."},
+  {cat:"Guerres & Conflits",icon:"⚔️",
+   link:"https://fr.wikipedia.org/wiki/Chute_du_mur_de_Berlin",
+   q:"Quelle image montre le Mur de Berlin, symbole de la Guerre Froide ?",
+   ans:0,
+   opts:[{l:"Mur de Berlin",img:I.berlin,e:"🧱"},{l:"Verdun",img:I.verdun,e:"⚔️"},{l:"Hiroshima",img:I.hiroshima,e:"☢️"},{l:"Rwanda",img:I.rwanda,e:"🌍"}],
+   exp:"Le <strong>Mur de Berlin</strong> (1961-1989) divisait Est et Ouest. Sa chute le 9 nov. 1989 marque la fin de la Guerre Froide."},
+  {cat:"Guerres & Conflits",icon:"⚔️",
+   link:"https://fr.wikipedia.org/wiki/G%C3%A9nocide_des_Tutsi_au_Rwanda",
+   q:"Quelle image montre le mémorial du génocide rwandais de 1994 ?",
+   ans:0,
+   opts:[{l:"Mémorial Rwanda",img:I.rwanda,e:"🌍"},{l:"Auschwitz",img:I.holocaust,e:"🕯️"},{l:"Vietnam",img:I.vietnam,e:"🌿"},{l:"Ukraine 2022",img:I.ukraine,e:"🇺🇦"}],
+   exp:"Le <strong>génocide du Rwanda</strong> (1994) : ~800 000 victimes en 100 jours. Les mémoriaux gardent la mémoire des victimes."},
+];
+
+/* ═══════════════════════════════════════════════════════
+   CATÉGORIES
+═══════════════════════════════════════════════════════ */
+const CATS=[
+  {n:"Histoire & Politique",i:"🏛️"},{n:"Géographie",i:"🗺️"},
+  {n:"Culture & Traditions",i:"🎭"},{n:"Économie",i:"💰"},
+  {n:"Sport",i:"⚽"},{n:"Gastronomie",i:"🍽️"},
+  {n:"Art & Littérature",i:"📚"},{n:"Rap Ivoirien",i:"🎤"},
+  {n:"Guerres & Conflits",i:"⚔️"},
+];
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let currentMode='text';
+let gQ=[], gIdx=0, gScore=0, gStreak=0, gAnswered=false;
+let gResults=[], gTmr=null, gAutoTmr=null, gTl=20;
+const TMAX={text:20,photo:25};
+const AUTO={text:4000,photo:5000};
+const CIRC=2*Math.PI*18;
+let adShown=false;
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION PAGE PAR PAGE
+═══════════════════════════════════════════════════════ */
+let pageHistory=[];
+
+function goTo(pageId){
+  const current=document.querySelector('.page.active');
+  if(current) current.classList.add('exit-left');
+  setTimeout(()=>{ if(current) current.classList.remove('active','exit-left'); },400);
+  const next=document.getElementById(pageId);
+  next.classList.add('active');
+  next.scrollTop=0;
+  pageHistory.push(pageId);
+}
+
+function goBack(toPageId){
+  const current=document.querySelector('.page.active');
+  if(current){
+    current.style.transition='transform .35s cubic-bezier(.4,0,.2,1)';
+    current.style.transform='translateX(100%)';
+    setTimeout(()=>{current.classList.remove('active');current.style.transform='';current.style.transition='';},370);
+  }
+  const prev=document.getElementById(toPageId);
+  prev.classList.add('active');
+  prev.scrollTop=0;
+  pageHistory.pop();
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+function init(){
+  // Total questions
+  const total=QS_TEXT.length+QS_PHOTO.length;
+  document.getElementById('stat-q').textContent=total;
+
+  // Cat chips
+  const cl=document.getElementById('cat-list');
+  CATS.forEach(c=>{
+    const nt=QS_TEXT.filter(q=>q.cat===c.n).length;
+    const np=QS_PHOTO.filter(q=>q.cat===c.n).length;
+    const s=document.createElement('span');
+    s.style.cssText='display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--gris2)';
+    s.innerHTML=`${c.i} ${c.n} <span style="color:var(--or);margin-left:2px">${nt+np}</span>`;
+    cl.appendChild(s);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   START GAME
+═══════════════════════════════════════════════════════ */
+function startGame(mode){
+  currentMode=mode;
+  adShown=false;
+  clearInterval(gTmr); clearTimeout(gAutoTmr);
+
+  const pool=mode==='text'?QS_TEXT:QS_PHOTO;
+  gQ=shuffle([...pool]).slice(0,10);
+  gIdx=0; gScore=0; gStreak=0; gResults=[];
+  gTl=TMAX[mode];
+
+  goTo('pg-question');
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER QUESTION
+═══════════════════════════════════════════════════════ */
+function renderQuestion(){
+  clearTimeout(gAutoTmr); clearInterval(gTmr);
+  gAnswered=false;
+
+  const q=gQ[gIdx], tot=gQ.length;
+
+  // Header
+  document.getElementById('q-score').textContent=gScore;
+  document.getElementById('q-streak').textContent=gStreak>1?gStreak+'🔥':gStreak;
+  document.getElementById('q-num').textContent=`${gIdx+1}/${tot}`;
+  document.getElementById('q-pb').style.width=`${(gIdx/tot)*100}%`;
+  document.getElementById('q-cat').innerHTML=`${q.icon} ${q.cat}`;
+  document.getElementById('q-label').textContent=`QUESTION ${gIdx+1} / ${tot}`;
+  document.getElementById('q-text').textContent=q.q;
+
+  // Mode badge
+  document.getElementById('q-modebadge').style.display=currentMode==='photo'?'inline-flex':'none';
+
+  // Reset exp & controls
+  document.getElementById('q-exp').className='exp-box';
+  document.getElementById('q-btnnext').style.display='none';
+  document.getElementById('q-anlbl').className='an-lbl';
+  document.getElementById('q-anbar').className='an-bar';
+
+  // Scroll top
+  document.getElementById('pg-question').scrollTop=0;
+
+  if(currentMode==='text'){
+    loadQuestionImage(q);
+    renderTextOptions(q);
+    document.getElementById('q-opts-photo').style.display='none';
+    document.getElementById('q-opts-text').style.display='';
+  } else {
+    document.getElementById('q-img').className='q-img'; // hide
+    document.getElementById('q-opts-text').style.display='none';
+    document.getElementById('q-opts-photo').style.display='';
+    renderPhotoOptions(q);
+  }
+
+  startTimer();
+}
+
+/* ── Image de question (mode texte) ── */
+function loadQuestionImage(q){
+  const box=document.getElementById('q-img');
+  const shim=document.getElementById('q-shim');
+  const emoj=document.getElementById('q-emoj');
+  const img=document.getElementById('q-imgel');
+  const credit=document.getElementById('q-credit');
+
+  box.className='q-img'; img.className=''; img.src='';
+  shim.className='shimmer'; emoj.style.opacity='.15'; emoj.style.fontSize='56px';
+
+  if(!q||!q.img){box.className='q-img';return;}
+
+  box.classList.add('show');
+  emoj.textContent=q.icon||'';
+  credit.textContent=q.credit||'';
+
+  const tmp=new Image(); tmp.crossOrigin='';
+  const tag=Date.now()+'_'+gIdx;
+  img.dataset.tag=tag;
+  tmp.onload=()=>{ if(img.dataset.tag!==tag) return; img.src=tmp.src; img.classList.add('ok'); shim.classList.add('off'); emoj.style.opacity='0'; };
+  tmp.onerror=()=>{ shim.classList.add('off'); emoj.style.opacity='.45'; emoj.style.fontSize='72px'; };
+  tmp.src=q.img;
+}
+
+/* ── Options texte ── */
+function renderTextOptions(q){
+  const grid=document.getElementById('q-opts-text');
+  grid.innerHTML='';
+  const letters=['A','B','C','D'];
+  const items=shuffle(q.opts.map((o,i)=>({o,ok:i===q.ans})));
+  const cp=items.findIndex(x=>x.ok);
+  items.forEach((item,i)=>{
+    const btn=document.createElement('button');
+    btn.className='opt-btn';
+    btn.innerHTML=`<span class="opt-letter">${letters[i]}</span>${item.o}`;
+    btn.onclick=()=>pick(item.ok,i,cp);
+    grid.appendChild(btn);
+  });
+}
+
+/* ── Options photo ── */
+function renderPhotoOptions(q){
+  const grid=document.getElementById('q-opts-photo');
+  grid.innerHTML='';
+  const letters=['A','B','C','D'];
+  const items=shuffle(q.opts.map((o,i)=>({...o,ok:i===q.ans})));
+  const cp=items.findIndex(x=>x.ok);
+  items.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.className='photo-opt';
+    const sid=`psh_${gIdx}_${i}`, iid=`pim_${gIdx}_${i}`;
+    div.innerHTML=`<div class="pshim" id="${sid}"></div><div class="pemoj">${item.e||'🖼️'}</div><img id="${iid}" src="" alt="${item.l}"><div class="plbl">${item.l}</div><div class="pbadge">${letters[i]}</div>`;
+    div.onclick=()=>pick(item.ok,i,cp);
+    grid.appendChild(div);
+
+    if(item.img){
+      const tmp=new Image(); tmp.crossOrigin='';
+      const tag=`${gIdx}_${i}`;
+      tmp.onload=()=>{
+        const el=document.getElementById(iid), sh=document.getElementById(sid);
+        if(el){ el.src=tmp.src; el.classList.add('ok'); }
+        if(sh) sh.classList.add('off');
+      };
+      tmp.onerror=()=>{ const sh=document.getElementById(sid); if(sh) sh.classList.add('off'); };
+      tmp.src=item.img;
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════════════════ */
+function startTimer(){
+  gTl=TMAX[currentMode]; updTimer();
+  gTmr=setInterval(()=>{
+    gTl--; updTimer();
+    if(gTl<=0){ clearInterval(gTmr); revealAnswer(false,-1,-1,true); }
+  },1000);
+}
+function updTimer(){
+  const p=gTl/TMAX[currentMode];
+  document.getElementById('q-timerCirc').style.strokeDashoffset=CIRC*(1-p);
+  document.getElementById('q-timerCirc').style.stroke=gTl<=5?'#E53935':gTl<=10?'#FF9800':'var(--orange)';
+  document.getElementById('q-timerLbl').textContent=gTl;
+}
+
+function pick(ok,chosen,corrPos){
+  if(gAnswered) return;
+  clearInterval(gTmr);
+  revealAnswer(ok,chosen,corrPos,false);
+}
+
+/* ═══════════════════════════════════════════════════════
+   REVEAL ANSWER
+═══════════════════════════════════════════════════════ */
+function revealAnswer(ok,chosen,corrPos,timeout){
+  gAnswered=true;
+  if(ok){gScore++;gStreak++;}else{gStreak=0;}
+  gResults.push(ok);
+
+  // Colorer les options
+  if(currentMode==='text'){
+    document.querySelectorAll('#q-opts-text .opt-btn').forEach((b,i)=>{
+      b.disabled=true;
+      if(i===corrPos) b.classList.add('correct');
+      else if(i===chosen&&!ok) b.classList.add('wrong');
+    });
+  } else {
+    document.querySelectorAll('#q-opts-photo .photo-opt').forEach((d,i)=>{
+      d.classList.add('disabled'); d.onclick=null;
+      if(i===corrPos) d.classList.add('correct');
+      else if(i===chosen&&!ok) d.classList.add('wrong');
+    });
+  }
+
+  // Explication + lien automatique
+  const pfx=timeout?'⏱️ Temps écoulé ! ':ok?'✅ ':'❌ ';
+  const q=gQ[gIdx];
+  let expHtml=pfx+q.exp;
+  if(q.link){
+    expHtml+=`<br><a class="exp-link" href="${q.link}" target="_blank" rel="noopener">
+      <span>📖</span>
+      <span>En savoir plus sur Wikipedia</span>
+      <span style="margin-left:auto;opacity:.6;font-size:10px">↗</span>
+    </a>`;
+  }
+  document.getElementById('q-exp').innerHTML=expHtml;
+  document.getElementById('q-exp').classList.add('show');
+  document.getElementById('q-score').textContent=gScore;
+  document.getElementById('q-streak').textContent=gStreak>1?gStreak+'🔥':gStreak;
+
+  // Bouton suivant
+  document.getElementById('q-btnnext').style.display='inline-block';
+  document.getElementById('q-btnnext').textContent=gIdx<gQ.length-1?'SUIVANT →':'RÉSULTATS →';
+
+  // Auto-next
+  startAutoNext();
+}
+
+function startAutoNext(){
+  const delay=AUTO[currentMode];
+  const fill=document.getElementById('q-anfill');
+  document.getElementById('q-anlbl').classList.add('show');
+  document.getElementById('q-anbar').classList.add('show');
+  document.getElementById('q-ancnt').textContent=Math.ceil(delay/1000);
+  fill.style.transition='none'; fill.style.width='100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fill.style.transition=`width ${delay}ms linear`; fill.style.width='0%';
+  }));
+  let t=0;
+  const tick=setInterval(()=>{ t++; document.getElementById('q-ancnt').textContent=Math.max(0,Math.ceil((delay-t*1000)/1000)); if(t>=delay/1000) clearInterval(tick); },1000);
+  gAutoTmr=setTimeout(()=>{ clearInterval(tick); nextQ(); },delay);
+}
+
+function nextQ(){
+  clearTimeout(gAutoTmr);
+  gIdx++;
+
+  // Interstitiel pub à la question 5
+  if(gIdx===5 && !adShown){
+    adShown=true;
+    showAdInterstitial();
+    return;
+  }
+
+  if(gIdx>=gQ.length) showResult();
+  else renderQuestion();
+}
+
+/* ═══════════════════════════════════════════════════════
+   INTERSTITIEL PUBLICITAIRE
+═══════════════════════════════════════════════════════ */
+function showAdInterstitial(){
+  goTo('pg-ad');
+  const fill=document.getElementById('ad-skip-fill');
+  const lbl=document.getElementById('ad-skip-lbl');
+  const btn=document.getElementById('ad-skip-btn');
+  const cnt=document.getElementById('ad-skip-cnt');
+
+  fill.style.transition='none'; fill.style.width='0%';
+  btn.className='ad-skip-btn'; btn.style.display='none';
+  cnt.textContent=5;
+
+  setTimeout(()=>{
+    fill.style.transition='width 5s linear'; fill.style.width='100%';
+  },100);
+
+  let t=5;
+  const tick=setInterval(()=>{
+    t--; cnt.textContent=Math.max(0,t);
+    if(t<=0){
+      clearInterval(tick);
+      lbl.innerHTML='✅ Tu peux continuer !';
+      btn.classList.add('show'); btn.style.display='inline-block';
+    }
+  },1000);
+}
+
+function skipAd(){
+  if(gIdx>=gQ.length) showResult();
+  else { goTo('pg-question'); renderQuestion(); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RÉSULTATS
+═══════════════════════════════════════════════════════ */
+function showResult(){
+  goTo('pg-result');
+  const tot=gQ.length, pct=gScore/tot;
+
+  document.getElementById('r-score').textContent=gScore;
+  document.getElementById('r-tot').textContent='/'+tot;
+
+  const arc=document.getElementById('r-arc');
+  const c=2*Math.PI*68;
+  arc.style.strokeDasharray=c;
+  setTimeout(()=>{
+    arc.style.strokeDashoffset=c*(1-pct);
+    arc.style.stroke=pct>=.7?'var(--vert)':pct>=.4?'var(--or)':'#E53935';
+  },400);
+
+  const msgs=[
+    ["AÏE AÏE AÏE !","Il faut réviser davantage !"],
+    ["PAS MAL…","Tu connais quelques éléments."],
+    ["BIEN JOUÉ !","Tu maîtrises bien ces sujets."],
+    ["EXCELLENT !","Tu es un vrai expert ! 🇨🇮⚔️"],
+  ];
+  const lvl=pct<.3?0:pct<.6?1:pct<.9?2:3;
+  document.getElementById('r-title').textContent=msgs[lvl][0];
+  document.getElementById('r-msg').textContent=msgs[lvl][1];
+
+  // Stats
+  const wrong=tot-gScore;
+  document.getElementById('r-correct').textContent=gScore;
+  document.getElementById('r-wrong').textContent=wrong;
+  document.getElementById('r-pct').textContent=Math.round(pct*100)+'%';
+
+  // Recap dots
+  const rg=document.getElementById('r-recap'); rg.innerHTML='';
+  gResults.forEach(ok=>{
+    const d=document.createElement('div');
+    d.className='rdot '+(ok?'ok':'ko');
+    rg.appendChild(d);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════ */
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+
+/* Init */
+init();
+</script>
+</body>
+</html>
